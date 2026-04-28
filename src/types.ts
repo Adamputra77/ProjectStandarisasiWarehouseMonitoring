@@ -5,18 +5,13 @@ export type QuantitativeState = Record<string, {
   score: number;
 }>;
 
-export type QualitativeItem = {
-  id: string;
-  remark: string;
-  pic: string;
-  checked: boolean;
-};
-
 export type RecommendationItem = {
   id: string;
   text: string;
   status: string;
   comment: string;
+  beforePic?: string;
+  afterPic?: string;
 };
 
 export type RecommendationMeta = {

@@ -1,0 +1,68 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { 
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+    }
+
+    // Admin Check
+    // Bootstrapped admins: adamsap8888@gmail.com or rrajadinadam@gmail.com
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'adamsap8888@gmail.com' ||
+        request.auth.token.email == 'rrajadinadam@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Admins Collection
+    match /admins/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Settings Collection
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      // Allow read to owner and admins
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      // List allows reading multiple users. We allow admins to list all.
+      // For owners to just list, it would be restricted by query or blocked.
+      allow list: if isAdmin();
+
+      allow create: if isSignedIn() 
+        && isValidId(userId) 
+        && request.auth.uid == userId 
+        && incoming().keys().hasAll(['uid', 'email', 'lastLogin'])
+        && incoming().uid == request.auth.uid;
+
+      allow update: if isSignedIn() 
+        && isValidId(userId) 
+        && (
+          isAdmin() ||
+          (
+            request.auth.uid == userId 
+            && incoming().uid == existing().uid 
+            && incoming().email == existing().email
+          )
+        );
+
+      allow delete: if isAdmin();
+    }
+  }
+}
