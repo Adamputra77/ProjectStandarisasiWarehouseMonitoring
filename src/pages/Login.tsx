@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Building } from 'lucide-react';
 import { signInWithGoogle } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2';
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +14,23 @@ export default function Login() {
     try {
       setError(null);
       setIsLoading(true);
-      await signInWithGoogle();
+      const user = await signInWithGoogle();
+      
+      const email = user.email || '';
+      const isPersonal = email.endsWith('@gmail.com') || email.endsWith('@googlemail.com');
+      const accountTypeLabel = isPersonal ? 'Akun Pribadi' : 'Akun Korporat';
+      
+      Swal.fire({
+        title: `Login Berhasil (${accountTypeLabel})`,
+        text: `Selamat datang, ${user.displayName || email}`,
+        icon: 'success',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 4000,
+        timerProgressBar: true,
+      });
+
       navigate('/');
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {

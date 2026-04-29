@@ -12,6 +12,7 @@ interface UserData {
   photoURL: string;
   lastLogin: string;
   role: string;
+  isBanned?: boolean;
 }
 
 export default function UsersTab() {
@@ -21,31 +22,147 @@ export default function UsersTab() {
   const { isMaintenanceMode } = useAuth();
   const [togglingMaintenance, setTogglingMaintenance] = useState(false);
 
-  const toggleMaintenance = async () => {
+  const toggleUserBan = async (userId: string, currentBanStatus: boolean) => {
     try {
-      setTogglingMaintenance(true);
-      const newMode = !isMaintenanceMode;
-      await setDoc(doc(db, 'settings', 'app'), {
-        maintenanceMode: newMode
-      }, { merge: true });
+      const newBanStatus = !currentBanStatus;
+      await setDoc(doc(db, 'users', userId), { isBanned: newBanStatus }, { merge: true });
       
+      setUsers(users.map(u => u.uid === userId ? { ...u, isBanned: newBanStatus } : u));
       Swal.fire({
-        title: 'Sukses!',
-        text: `Mode Maintenance berhasil ${newMode ? 'diaktifkan' : 'dinonaktifkan'}.`,
+        title: 'Berhasil!',
+        text: newBanStatus ? 'User berhasil dikeluarkan.' : 'User berhasil dipulihkan.',
         icon: 'success',
-        confirmButtonColor: '#FF7A00',
+        confirmButtonColor: '#10B981',
       });
-      
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       Swal.fire({
-        title: 'Gagal!',
-        text: 'Terjadi kesalahan saat mengubah mode maintenance.',
+        title: 'Gagal',
+        text: 'Anda tidak memiliki akses atau terjadi kesalahan.',
         icon: 'error',
-        confirmButtonColor: '#FF7A00',
       });
-    } finally {
-      setTogglingMaintenance(false);
+    }
+  };
+
+  const deleteUser = async (userId: string) => {
+    try {
+      const result = await Swal.fire({
+        title: 'Hapus User?',
+        text: 'Data user ini akan dihapus dari sistem (database).',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#EF4444',
+        cancelButtonColor: '#6B7280',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+      });
+
+      if (result.isConfirmed) {
+        const batch = writeBatch(db);
+        batch.delete(doc(db, 'users', userId));
+        batch.delete(doc(db, 'admins', userId)); // in case they were admin
+        await batch.commit();
+        
+        setUsers(users.filter(u => u.uid !== userId));
+        
+        Swal.fire(
+          'Terhapus!',
+          'Data user telah dihapus.',
+          'success'
+        );
+      }
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire({
+        title: 'Gagal',
+        text: 'Anda tidak memiliki akses atau terjadi kesalahan.',
+        icon: 'error',
+      });
+    }
+  };
+
+  const toggleMaintenance = async () => {
+    if (isMaintenanceMode) {
+      try {
+        setTogglingMaintenance(true);
+        await setDoc(doc(db, 'settings', 'app'), {
+          maintenanceMode: false,
+          maintenanceScheduledFor: null
+        }, { merge: true });
+        
+        Swal.fire({
+          title: 'Sukses!',
+          text: `Mode Maintenance berhasil dinonaktifkan.`,
+          icon: 'success',
+          confirmButtonColor: '#10B981',
+        });
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          title: 'Gagal!',
+          text: 'Terjadi kesalahan saat mengubah mode maintenance.',
+          icon: 'error',
+          confirmButtonColor: '#EF4444',
+        });
+      } finally {
+        setTogglingMaintenance(false);
+      }
+    } else {
+      const { value: delay } = await Swal.fire({
+        title: 'Aktifkan Maintenance Mode',
+        text: 'Pilih kapan maintenance akan dimulai. Pengguna akan mendapatkan notifikasi.',
+        input: 'select',
+        inputOptions: {
+          '0': 'Sekarang Juga',
+          '5': '5 Menit Lagi',
+          '10': '10 Menit Lagi',
+          '15': '15 Menit Lagi',
+          '30': '30 Menit Lagi'
+        },
+        inputPlaceholder: 'Pilih Waktu',
+        showCancelButton: true,
+        confirmButtonColor: '#FF7A00',
+        cancelButtonColor: '#6B7280',
+        confirmButtonText: 'Mulai'
+      });
+      
+      if (delay !== undefined) {
+        try {
+          setTogglingMaintenance(true);
+          const numDelay = parseInt(delay);
+          
+          if (numDelay === 0) {
+            await setDoc(doc(db, 'settings', 'app'), {
+              maintenanceMode: true,
+              maintenanceScheduledFor: null
+            }, { merge: true });
+          } else {
+            // Give some buffer, scheduling for future
+            const scheduledTime = Date.now() + numDelay * 60 * 1000;
+            await setDoc(doc(db, 'settings', 'app'), {
+              maintenanceMode: false,
+              maintenanceScheduledFor: scheduledTime
+            }, { merge: true });
+          }
+          
+          Swal.fire({
+            title: 'Sukses!',
+            text: numDelay === 0 ? 'Mode Maintenance berhasil diaktifkan.' : `Maintenance dijadwalkan dalam ${numDelay} menit.`,
+            icon: 'success',
+            confirmButtonColor: '#FF7A00',
+          });
+        } catch (err) {
+          console.error(err);
+          Swal.fire({
+            title: 'Gagal!',
+            text: 'Terjadi kesalahan saat mengatur maintenance.',
+            icon: 'error',
+            confirmButtonColor: '#EF4444',
+          });
+        } finally {
+          setTogglingMaintenance(false);
+        }
+      }
     }
   };
 
@@ -55,7 +172,7 @@ export default function UsersTab() {
       // Update in users collection
       batch.set(doc(db, 'users', userId), { role: newRole }, { merge: true });
       
-      // Update admins collection
+      // Update admins collection based on role
       if (newRole === 'admin') {
         batch.set(doc(db, 'admins', userId), { createdAt: serverTimestamp() });
       } else {
@@ -190,6 +307,7 @@ export default function UsersTab() {
               <th className="px-6 py-3">Role</th>
               <th className="px-6 py-3">Last Login</th>
               <th className="px-6 py-3">User ID</th>
+              <th className="px-6 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100 dark:divide-dark-border">
@@ -224,10 +342,13 @@ export default function UsersTab() {
                       className={`inline-flex px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer border-0 outline-none focus:ring-2 focus:ring-offset-1 focus:ring-blue-500 appearance-none ${
                         user.role === 'admin' 
                           ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' 
+                          : user.role === 'supervisor'
+                          ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                           : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300'
                       }`}
                     >
                       <option value="user" className="bg-white dark:bg-dark-bg text-gray-900 dark:text-gray-100">User</option>
+                      <option value="supervisor" className="bg-white dark:bg-dark-bg text-gray-900 dark:text-gray-100">Supervisor</option>
                       <option value="admin" className="bg-white dark:bg-dark-bg text-gray-900 dark:text-gray-100">Admin</option>
                     </select>
                   </td>
@@ -236,6 +357,26 @@ export default function UsersTab() {
                   </td>
                   <td className="px-6 py-4 text-gray-400 dark:text-gray-500 font-mono text-[10px]">
                     {user.uid}
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <button
+                        onClick={() => toggleUserBan(user.uid, !!user.isBanned)}
+                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-dark-panel transition-all ${
+                          user.isBanned 
+                            ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 focus:ring-orange-500 dark:bg-orange-900/30 dark:hover:bg-orange-900/50 dark:text-orange-400'
+                            : 'bg-red-50 hover:bg-red-100 text-red-600 focus:ring-red-500 dark:bg-red-900/20 dark:hover:bg-red-900/40 dark:text-red-400 border border-red-200 dark:border-red-900/30'
+                        }`}
+                      >
+                        {user.isBanned ? 'Pulihkan' : 'Keluarkan'}
+                      </button>
+                      <button
+                        onClick={() => deleteUser(user.uid)}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-white dark:focus:ring-offset-dark-panel transition-all bg-gray-100 hover:bg-red-600 hover:text-white text-gray-700 focus:ring-red-500 dark:bg-gray-800 dark:hover:bg-red-700 dark:text-gray-300 border border-transparent dark:border-dark-border"
+                      >
+                        Hapus
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

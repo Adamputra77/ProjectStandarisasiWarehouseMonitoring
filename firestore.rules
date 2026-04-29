@@ -37,6 +37,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Warehouses Collection (Data for checklist per warehouse)
+    match /warehouses/{warehouseId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
     // Users Collection
     match /users/{userId} {
       // Allow read to owner and admins

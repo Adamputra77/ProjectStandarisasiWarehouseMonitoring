@@ -1,6 +1,7 @@
 import React from 'react';
 import { RecommendationItem, RecommendationMeta } from '../types';
 import { Plus, Trash2, Upload, X } from 'lucide-react';
+import { WAREHOUSES } from '../pages/Dashboard';
 
 interface RecommendationsTabProps {
   meta: RecommendationMeta;
@@ -45,24 +46,26 @@ export default function RecommendationsTab({ meta, setMeta, items, setItems }: R
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Month :</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date :</label>
             <input 
-              type="text" 
+              type="date" 
               value={meta.month}
               onChange={(e) => setMeta(prev => ({ ...prev, month: e.target.value }))}
               className="w-full max-w-xs bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF7A00] focus:ring-1 focus:ring-[#FF7A00] transition-colors"
-              placeholder="e.g. October 2026"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Location :</label>
-            <input 
-              type="text" 
+            <select
               value={meta.location}
               onChange={(e) => setMeta(prev => ({ ...prev, location: e.target.value }))}
-              className="w-full max-w-xs bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF7A00] focus:ring-1 focus:ring-[#FF7A00] transition-colors"
-              placeholder="e.g. Warehouse A"
-            />
+              className="w-full max-w-xs bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-gray-900 dark:text-gray-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-[#FF7A00] focus:ring-1 focus:ring-[#FF7A00] transition-colors cursor-pointer"
+            >
+              <option value="">Select Location...</option>
+              {WAREHOUSES.map((wh) => (
+                <option key={wh} value={wh}>{wh}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -77,8 +80,8 @@ export default function RecommendationsTab({ meta, setMeta, items, setItems }: R
           </button>
         </div>
 
-        <div className="border border-gray-200 dark:border-dark-border rounded-lg overflow-hidden bg-white dark:bg-dark-panel">
-          <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+        <div className="border border-gray-200 dark:border-dark-border rounded-lg overflow-x-auto bg-white dark:bg-dark-panel">
+          <table className="min-w-full text-left text-sm text-gray-600 dark:text-gray-300">
             <thead className="bg-gray-50 dark:bg-dark-border/50 text-gray-700 dark:text-gray-300 text-xs uppercase border-b border-gray-200 dark:border-dark-border">
               <tr>
                 <th className="px-4 py-3 w-1/3">Rekomendasi Perbaikan (√)</th>

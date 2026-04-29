@@ -3,6 +3,7 @@ export type StatusType = 'Y' | 'N' | 'NA';
 export type QuantitativeState = Record<string, {
   status: StatusType | '';
   score: number;
+  notes?: string;
 }>;
 
 export type RecommendationItem = {
