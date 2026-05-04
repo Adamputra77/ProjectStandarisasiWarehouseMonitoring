@@ -1,14 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building } from 'lucide-react';
 import { signInWithGoogle } from '../lib/firebase';
 import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { currentUser, isMaintenanceMode, isAdmin } = useAuth();
   
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Tunda sebentar untuk memastikan state konsisten dan pesan maintenance bisa dihandle PrivateRoute jika perlu
+    if (currentUser) {
+      if (isMaintenanceMode && !isAdmin) {
+         // Biarkan redirect ke home, nanti App.tsx yang handle proses sign out / tampilkan maintenance page
+         navigate('/');
+      } else {
+         navigate('/');
+      }
+    }
+  }, [currentUser, navigate, isMaintenanceMode, isAdmin]);
 
   const handleGoogleSignIn = async () => {
     try {

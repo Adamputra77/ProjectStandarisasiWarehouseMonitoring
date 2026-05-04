@@ -107,7 +107,7 @@ export default function OverviewTab({ state = {}, allStates = {} }: OverviewTabP
               Klausul: {filledItems}
             </span>
           </div>
-          <h3 className="relative z-10 text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">Selesai</h3>
+          <h3 className="relative z-10 text-gray-500 dark:text-gray-400 text-xs sm:text-sm font-medium">Parameter Selesai</h3>
           <div className="flex items-baseline space-x-1 sm:space-x-2 mt-1">
             <p className="relative z-10 text-xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">{filledCategories}</p>
             <p className="relative z-10 text-[10px] sm:text-sm text-gray-500 font-medium">({Math.round((filledCategories / (totalCategories || 1)) * 100)}%)</p>
@@ -147,24 +147,38 @@ export default function OverviewTab({ state = {}, allStates = {} }: OverviewTabP
         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">Diagram Progress Checklist</h3>
         <div className="h-72">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+            <BarChart data={chartData} margin={{ top: 25, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" strokeOpacity={0.5} />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />
               <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} domain={[0, 100]} />
               <Tooltip 
-                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--color-dark-panel, #fff)', color: 'var(--color-gray-900, #111)' }}
+                cursor={{ fill: 'rgba(107, 114, 128, 0.1)' }}
+                contentStyle={{ borderRadius: '12px', border: '1px solid #E5E7EB', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', backgroundColor: 'var(--color-bg, white)' }}
                 formatter={(value: number, name: string) => {
                   if (name === 'progress') return [`${value}%`, 'Progress'];
                   return [value, name];
                 }}
               />
-              <Bar dataKey="progress" radius={[4, 4, 0, 0]} maxBarSize={50}>
+              <Bar 
+                dataKey="progress" 
+                radius={[6, 6, 0, 0]} 
+                maxBarSize={60}
+                animationDuration={1500}
+                label={{ 
+                  position: 'top', 
+                  formatter: (value) => `${value}%`,
+                  fill: '#6B7280', 
+                  fontSize: 13, 
+                  fontWeight: 600,
+                  dy: -5
+                }}
+              >
                 {chartData.map((entry, index) => {
-                  let color = '#EF4444'; // Red < 50%
+                  let color = '#F87171'; // Lighter Red < 50%
                   if (entry.progress >= 80) {
-                    color = '#22C55E'; // Green >= 80%
+                    color = '#4ADE80'; // Lighter Green >= 80%
                   } else if (entry.progress >= 50) {
-                    color = '#EAB308'; // Yellow 50% - 79%
+                    color = '#FBBF24'; // Lighter Yellow 50% - 79%
                   }
                   return <Cell key={`cell-${index}`} fill={color} />;
                 })}

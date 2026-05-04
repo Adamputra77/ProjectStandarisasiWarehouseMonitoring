@@ -62,7 +62,7 @@ export const syncUserToFirestore = async (user: User) => {
     const userRef = doc(db, 'users', user.uid);
     await setDoc(userRef, {
       uid: user.uid,
-      email: user.email,
+      email: user.email || '',
       displayName: user.displayName || 'User',
       photoURL: user.photoURL || '',
       lastLogin: new Date().toISOString()
