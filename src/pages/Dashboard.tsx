@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db, logOut } from '../lib/firebase';
 import { QuantitativeState, RecommendationItem, RecommendationMeta } from '../types';
@@ -42,25 +42,17 @@ export default function Dashboard() {
   
   const [activeWarehouse, setActiveWarehouse] = useState<string>(WAREHOUSES[0]);
   
+  const [activeDate, setActiveDate] = useState<string>(new Date().toISOString().substring(0, 10)); // YYYY-MM-DD
+  const [initialDate] = useState<string>(new Date().toISOString().substring(0, 10)); // Keep track of the fallback date for legacy data
+
   // States stored per warehouse
-  const [warehouseQuantStates, setWarehouseQuantStates] = useState<Record<string, QuantitativeState>>({});
-  const [warehouseRecMetas, setWarehouseRecMetas] = useState<Record<string, RecommendationMeta>>({});
-  const [warehouseRecItems, setWarehouseRecItems] = useState<Record<string, RecommendationItem[]>>({});
+  const [warehouseData, setWarehouseData] = useState<Record<string, any>>({});
   
   useEffect(() => {
     const unsubscribes = WAREHOUSES.map(wh => {
       return onSnapshot(doc(db, 'warehouses', wh), (snapshot) => {
         if (snapshot.exists()) {
-          const data = snapshot.data();
-          if (data.quantState) {
-            setWarehouseQuantStates(prev => ({ ...prev, [wh]: data.quantState }));
-          }
-          if (data.recMeta) {
-            setWarehouseRecMetas(prev => ({ ...prev, [wh]: data.recMeta }));
-          }
-          if (data.recItems) {
-            setWarehouseRecItems(prev => ({ ...prev, [wh]: data.recItems }));
-          }
+          setWarehouseData(prev => ({ ...prev, [wh]: snapshot.data() }));
         }
       });
     });
@@ -68,35 +60,67 @@ export default function Dashboard() {
   }, []);
   
   // Helpers to get/set current warehouse state
-  const quantState = warehouseQuantStates[activeWarehouse] || {};
+  const quantState = warehouseData[activeWarehouse]?.quantStates?.[activeDate] 
+    || (activeDate === initialDate && warehouseData[activeWarehouse]?.quantState ? warehouseData[activeWarehouse]?.quantState : {}) 
+    || {};
+
   const setQuantState: React.Dispatch<React.SetStateAction<QuantitativeState>> = (newState) => {
-    setWarehouseQuantStates(prev => {
-      const currentState = prev[activeWarehouse] || {};
-      const nextState = typeof newState === 'function' ? newState(currentState) : newState;
-      setDoc(doc(db, 'warehouses', activeWarehouse), { quantState: nextState }, { merge: true }).catch(err => console.error("Error saving to Firebase:", err));
-      return { ...prev, [activeWarehouse]: nextState };
+    setWarehouseData(prev => {
+      const currentWhData = prev[activeWarehouse] || {};
+      const currentStates = currentWhData.quantStates || {};
+      const prevStateForDate = currentStates[activeDate] || {};
+      const actualNextState = typeof newState === 'function' ? newState(prevStateForDate) : newState;
+
+      const nextWhData = {
+        ...currentWhData,
+        quantStates: {
+          ...currentStates,
+          [activeDate]: actualNextState
+        }
+      };
+
+      setDoc(doc(db, 'warehouses', activeWarehouse), { quantStates: nextWhData.quantStates }, { merge: true }).catch(err => console.error("Error saving to Firebase:", err));
+
+      return { ...prev, [activeWarehouse]: nextWhData };
     });
   };
 
-  const recMeta = warehouseRecMetas[activeWarehouse] || { month: '', location: activeWarehouse };
+  const recMeta = warehouseData[activeWarehouse]?.recMeta || { month: '', location: activeWarehouse };
   const setRecMeta: React.Dispatch<React.SetStateAction<RecommendationMeta>> = (newMeta) => {
-    setWarehouseRecMetas(prev => {
-      const currentMeta = prev[activeWarehouse] || { month: '', location: activeWarehouse };
+    setWarehouseData(prev => {
+      const currentMeta = prev[activeWarehouse]?.recMeta || { month: '', location: activeWarehouse };
       const nextMeta = typeof newMeta === 'function' ? newMeta(currentMeta) : newMeta;
+      
       setDoc(doc(db, 'warehouses', activeWarehouse), { recMeta: nextMeta }, { merge: true }).catch(err => console.error("Error saving to Firebase:", err));
-      return { ...prev, [activeWarehouse]: nextMeta };
+      
+      return { ...prev, [activeWarehouse]: { ...prev[activeWarehouse], recMeta: nextMeta } };
     });
   };
 
-  const recItems = warehouseRecItems[activeWarehouse] || [];
+  const recItems = warehouseData[activeWarehouse]?.recItems || [];
   const setRecItems: React.Dispatch<React.SetStateAction<RecommendationItem[]>> = (newItems) => {
-    setWarehouseRecItems(prev => {
-      const currentItems = prev[activeWarehouse] || [];
+    setWarehouseData(prev => {
+      const currentItems = prev[activeWarehouse]?.recItems || [];
       const nextItems = typeof newItems === 'function' ? newItems(currentItems) : newItems;
+      
       setDoc(doc(db, 'warehouses', activeWarehouse), { recItems: nextItems }, { merge: true }).catch(err => console.error("Error saving to Firebase:", err));
-      return { ...prev, [activeWarehouse]: nextItems };
+      
+      return { ...prev, [activeWarehouse]: { ...prev[activeWarehouse], recItems: nextItems } };
     });
   };
+
+  const allQuantStates = useMemo(() => {
+    const states: Record<string, QuantitativeState> = {};
+    WAREHOUSES.forEach(wh => {
+      const whData = warehouseData[wh];
+      if (whData) {
+        states[wh] = whData.quantStates?.[activeDate] || (activeDate === initialDate && whData.quantState ? whData.quantState : {}) || {};
+      } else {
+        states[wh] = {};
+      }
+    });
+    return states;
+  }, [warehouseData, activeDate, initialDate]);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(() => window.innerWidth >= 768);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -144,26 +168,42 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 py-6 overflow-y-auto overflow-x-hidden">
-          {/* Mobile Warehouse Selector inside Sidebar */}
-          <div className="px-4 mb-6 md:hidden">
-            <p className="text-xs font-semibold text-blue-300/50 uppercase tracking-wider mb-2">
-              Lokasi Warehouse
-            </p>
-            <div className="relative group flex items-center bg-white/5 rounded-lg border border-white/10 px-3 py-2 transition-colors">
-              <MapPin className="w-4 h-4 text-[#FF7A00] mr-2 shrink-0" />
-              <select
-                value={activeWarehouse}
-                onChange={(e) => setActiveWarehouse(e.target.value)}
-                className="bg-transparent border-none outline-none text-sm font-semibold text-blue-100 cursor-pointer appearance-none pr-4 w-full"
-              >
-                {WAREHOUSES.map((wh) => (
-                  <option key={wh} value={wh} className="text-gray-900">
-                    {wh}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute right-2 flex items-center">
-                <svg className="w-4 h-4 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          {/* Mobile Global Selectors inside Sidebar */}
+          <div className="px-4 mb-6 md:hidden space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-blue-300/50 uppercase tracking-wider mb-2">
+                Tanggal Checklist
+              </p>
+              <div className="relative group flex items-center bg-white/5 rounded-lg border border-white/10 px-3 py-2 transition-colors">
+                <input
+                  type="date"
+                  value={activeDate}
+                  onChange={(e) => setActiveDate(e.target.value)}
+                  className="bg-transparent border-none outline-none text-sm font-semibold text-blue-100 cursor-pointer appearance-none w-full"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <p className="text-xs font-semibold text-blue-300/50 uppercase tracking-wider mb-2">
+                Lokasi Warehouse
+              </p>
+              <div className="relative group flex items-center bg-white/5 rounded-lg border border-white/10 px-3 py-2 transition-colors">
+                <MapPin className="w-4 h-4 text-[#FF7A00] mr-2 shrink-0" />
+                <select
+                  value={activeWarehouse}
+                  onChange={(e) => setActiveWarehouse(e.target.value)}
+                  className="bg-transparent border-none outline-none text-sm font-semibold text-blue-100 cursor-pointer appearance-none pr-4 w-full"
+                >
+                  {WAREHOUSES.map((wh) => (
+                    <option key={wh} value={wh} className="text-gray-900">
+                      {wh}
+                    </option>
+                  ))}
+                </select>
+                <div className="pointer-events-none absolute right-2 flex items-center">
+                  <svg className="w-4 h-4 text-blue-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                </div>
               </div>
             </div>
           </div>
@@ -278,6 +318,16 @@ export default function Dashboard() {
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Global Date Selector */}
+            <div className="relative group items-center bg-gray-50 dark:bg-dark-border/20 rounded-lg border border-gray-200 dark:border-dark-border px-3 py-1.5 transition-colors hidden md:flex">
+              <input
+                type="date"
+                value={activeDate}
+                onChange={(e) => setActiveDate(e.target.value)}
+                className="bg-transparent border-none outline-none text-sm font-semibold text-gray-700 dark:text-gray-300 cursor-pointer appearance-none"
+              />
+            </div>
+            
             {/* Warehouse Selector */}
             <div className="relative group flex items-center bg-blue-50 dark:bg-[#0A2647] rounded-lg border border-blue-100 dark:border-[#133A6B] px-3 py-1.5 transition-colors hidden md:flex">
               <MapPin className="w-4 h-4 text-[#FF7A00] mr-2" />
@@ -341,10 +391,10 @@ export default function Dashboard() {
         {/* Main Area */}
         <main className="flex-1 overflow-auto print:overflow-visible p-3 sm:p-6 lg:p-8">
           <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-            {activeTab === 'overview' && <OverviewTab state={quantState} allStates={warehouseQuantStates} />}
+            {activeTab === 'overview' && <OverviewTab state={quantState} allStates={allQuantStates} />}
             {activeTab === 'quant' && (
               <div className="bg-white dark:bg-dark-panel rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-dark-border p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <QuantitativeTab state={quantState} setState={setQuantState} />
+                <QuantitativeTab state={quantState} setState={setQuantState} activeDate={activeDate} setActiveDate={setActiveDate} />
               </div>
             )}
             {activeTab === 'rec' && (
@@ -354,7 +404,7 @@ export default function Dashboard() {
             )}
             {activeTab === 'summary' && (
               <div className="bg-white dark:bg-dark-panel rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.1)] border border-gray-100 dark:border-dark-border p-4 sm:p-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
-                <Summary state={quantState} activeWarehouse={activeWarehouse} />
+                <Summary state={quantState} activeWarehouse={activeWarehouse} activeDate={activeDate} />
               </div>
             )}
             {activeTab === 'users' && (

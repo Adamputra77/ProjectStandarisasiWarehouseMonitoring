@@ -8,9 +8,11 @@ import Swal from 'sweetalert2';
 interface QuantitativeTabProps {
   state: QuantitativeState;
   setState: React.Dispatch<React.SetStateAction<QuantitativeState>>;
+  activeDate: string;
+  setActiveDate: (val: string) => void;
 }
 
-export default function QuantitativeTab({ state, setState }: QuantitativeTabProps) {
+export default function QuantitativeTab({ state, setState, activeDate, setActiveDate }: QuantitativeTabProps) {
   const [tooltip, setTooltip] = useState<{ x: number, y: number, guidelines: string[] } | null>(null);
 
   const handleStatusChange = (id: string, newStatus: 'Y' | 'N' | 'NA') => {
@@ -37,7 +39,18 @@ export default function QuantitativeTab({ state, setState }: QuantitativeTabProp
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="bg-white dark:bg-dark-panel p-0 rounded-xl shadow-none border-none">
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-2">Quantitative Checklist</h2>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-4">
+          <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Quantitative Checklist</h2>
+          <div className="flex items-center space-x-2 w-full sm:w-auto">
+            <span className="text-sm font-medium text-gray-600 dark:text-gray-300 whitespace-nowrap">Date:</span>
+            <input 
+              type="date"
+              value={activeDate}
+              onChange={(e) => setActiveDate(e.target.value)}
+              className="bg-white dark:bg-dark-bg border border-gray-200 dark:border-dark-border text-gray-900 dark:text-gray-100 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-[#FF7A00] focus:ring-1 focus:ring-[#FF7A00] transition-colors flex-1 sm:flex-none w-full sm:w-auto"
+            />
+          </div>
+        </div>
         <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Evaluate each parameter. Select Available (Y), Not Available (N), or Not Applicable (NA). Provide a score from 1 (Poor) to 4 (Excellent).</p>
         
         <div className="space-y-12">
@@ -53,7 +66,7 @@ export default function QuantitativeTab({ state, setState }: QuantitativeTabProp
               </div>
               
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                <table className="w-full text-left text-sm text-gray-600 dark:text-gray-300 min-w-[800px]">
                   <thead className="bg-gray-50 dark:bg-dark-border/50 text-gray-700 dark:text-gray-300 text-xs uppercase border-b border-gray-200 dark:border-dark-border">
                     <tr>
                       <th className="px-4 py-3 w-16 text-center">No</th>

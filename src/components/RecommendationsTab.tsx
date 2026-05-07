@@ -81,7 +81,7 @@ export default function RecommendationsTab({ meta, setMeta, items, setItems }: R
         </div>
 
         <div className="border border-gray-200 dark:border-dark-border rounded-lg overflow-x-auto bg-white dark:bg-dark-panel">
-          <table className="min-w-full text-left text-sm text-gray-600 dark:text-gray-300">
+          <table className="w-full min-w-[800px] text-left text-sm text-gray-600 dark:text-gray-300">
             <thead className="bg-gray-50 dark:bg-dark-border/50 text-gray-700 dark:text-gray-300 text-xs uppercase border-b border-gray-200 dark:border-dark-border">
               <tr>
                 <th className="px-4 py-3 w-1/3">Rekomendasi Perbaikan (√)</th>

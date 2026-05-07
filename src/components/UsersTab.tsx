@@ -300,7 +300,7 @@ export default function UsersTab() {
           </div>
         </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm text-left">
+        <table className="w-full min-w-[800px] text-sm text-left">
           <thead className="bg-gray-50 dark:bg-dark-border/50 text-gray-500 dark:text-gray-400 text-xs uppercase font-medium border-b border-gray-200 dark:border-dark-border">
             <tr>
               <th className="px-6 py-3">User</th>

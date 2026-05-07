@@ -10,9 +10,10 @@ import autoTable from 'jspdf-autotable';
 interface SummaryProps {
   state: QuantitativeState;
   activeWarehouse?: string;
+  activeDate?: string;
 }
 
-export default function Summary({ state, activeWarehouse = '' }: SummaryProps) {
+export default function Summary({ state, activeWarehouse = '', activeDate = '' }: SummaryProps) {
   let totalAchievedScore = 0;
   let summaryBreakdown = quantitativeData.map(category => {
     let categoryMaxWeight = category.weight;
@@ -70,7 +71,7 @@ export default function Summary({ state, activeWarehouse = '' }: SummaryProps) {
     
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
-    doc.text(`Lokasi: ${activeWarehouse || 'Semua Area'}`, 14, 28);
+    doc.text(`Lokasi: ${activeWarehouse || 'Semua Area'}  |  Periode: ${activeDate || new Date().toISOString().split('T')[0]}`, 14, 28);
     doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID')}`, 14, 34);
 
     // Summary Section
@@ -198,9 +199,9 @@ export default function Summary({ state, activeWarehouse = '' }: SummaryProps) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center mb-4 print:hidden">
+      <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-4 gap-4 print:hidden">
         <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">Summary Laporan</h2>
-        <div className="flex space-x-3">
+        <div className="flex flex-wrap gap-2">
           <button 
             onClick={handleExportExcel}
             className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors btn-ripple"
