@@ -1,6 +1,6 @@
 
 This application was created by Mr. Adam Putra Pratama
-View your app in: https://ai.studio/apps/3998f531-e1bf-4c00-8659-23316ef2e92e
+View your app in: https://ais-pre-7tht46i7ntc5euc5gec2g3-271557689284.asia-east1.run.app/
 
 ## Run Locally
 
