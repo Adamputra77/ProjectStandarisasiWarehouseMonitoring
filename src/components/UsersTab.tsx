@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, orderBy, query, doc, setDoc, writeBatch, serverTimestamp, deleteDoc } from 'firebase/firestore';
+import { collection, getDocs, orderBy, query, doc, setDoc, writeBatch, serverTimestamp, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { Shield, ShieldAlert, User as UserIcon, Loader2, Settings, Wrench } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -201,31 +201,30 @@ export default function UsersTab() {
   };
 
   useEffect(() => {
-    const fetchUsers = async () => {
+    setLoading(true);
+    const q = query(collection(db, 'users'));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const usersList: UserData[] = [];
+      querySnapshot.forEach((doc) => {
+        usersList.push(doc.data() as UserData);
+      });
+      setUsers(usersList);
+      setLoading(false);
+      setError(null);
+    }, (err: any) => {
+      console.error("Error fetching users:", err);
+      if (err.message) setError(err.message);
+      
       try {
-        const q = query(collection(db, 'users'));
-        const querySnapshot = await getDocs(q);
-        const usersList: UserData[] = [];
-        querySnapshot.forEach((doc) => {
-          usersList.push(doc.data() as UserData);
-        });
-        setUsers(usersList);
-      } catch (err: any) {
-        console.error("Error fetching users:", err);
-        if (err.message) setError(err.message);
-        
-        try {
-          handleFirestoreError(err, OperationType.LIST, 'users');
-        } catch (e: any) {
-          // It throws, we already caught message
-          if (!error) setError(e.message);
-        }
-      } finally {
-        setLoading(false);
+        handleFirestoreError(err, OperationType.LIST, 'users');
+      } catch (e: any) {
+        // It throws, we already caught message
+        setError(prev => prev || e.message);
       }
-    };
+      setLoading(false);
+    });
 
-    fetchUsers();
+    return () => unsubscribe();
   }, []);
 
   if (loading) {
@@ -285,7 +284,7 @@ export default function UsersTab() {
       </div>
 
       <div className="bg-white dark:bg-dark-panel overflow-hidden rounded-xl border border-gray-200 dark:border-dark-border shadow-sm animate-in fade-in duration-500">
-        <div className="px-6 py-5 border-b border-gray-100 dark:border-dark-border bg-gray-50/50 dark:bg-dark-bg flex justify-between items-center">
+        <div className="px-6 py-5 border-b border-gray-100 dark:border-dark-border bg-gray-50/50 dark:bg-dark-bg flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
             <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center">
               <Shield className="w-5 h-5 text-gray-500 dark:text-gray-400 mr-2" />
@@ -295,7 +294,7 @@ export default function UsersTab() {
               Displaying all users registered via Google or Email.
             </p>
           </div>
-          <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center">
+          <div className="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full text-xs font-semibold flex items-center self-start sm:self-auto">
              {users.length} Total Users
           </div>
         </div>

@@ -82,7 +82,7 @@ export default function OverviewTab({ state = {}, allStates = {} }: OverviewTabP
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <div className="relative overflow-hidden bg-white dark:bg-dark-panel p-4 sm:p-6 rounded-xl shadow-sm border border-gray-100 dark:border-dark-border hover:shadow-md dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.5)] transition-shadow group animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '100ms' }}>
           <Warehouse className="absolute -right-4 -top-4 w-16 h-16 sm:w-24 sm:h-24 text-blue-50 dark:text-blue-900/10 rotate-12 transition-transform group-hover:scale-110 group-hover:-rotate-12 duration-700" />
           <div className="relative z-10 flex items-center justify-between mb-2 sm:mb-4">
@@ -145,8 +145,8 @@ export default function OverviewTab({ state = {}, allStates = {} }: OverviewTabP
 
       <div className="bg-white dark:bg-dark-panel p-6 rounded-xl shadow-sm border border-gray-100 dark:border-dark-border animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: '500ms' }}>
         <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-6">Diagram Progress Checklist</h3>
-        <div className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-72 w-full min-w-0">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={chartData} margin={{ top: 25, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" strokeOpacity={0.5} />
               <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} dy={10} />

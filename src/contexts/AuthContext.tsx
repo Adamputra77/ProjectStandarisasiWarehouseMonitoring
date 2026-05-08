@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, db } from "../lib/firebase";
+import { auth, db, syncUserToFirestore } from "../lib/firebase";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 
@@ -36,6 +36,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       if (user) {
+        // Update user data on login/load to keep lastLogin fresh
+        syncUserToFirestore(user).catch(console.error);
+
         setIsAdmin(
           user.email === 'adamsap8888@gmail.com' || 
           user.email === 'rrajadinadam@gmail.com'
