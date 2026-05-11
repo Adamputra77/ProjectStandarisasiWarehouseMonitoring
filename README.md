@@ -1,6 +1,12 @@
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
 
-This application was created by Mr. Adam Putra Pratama
-View your app in: https://ais-pre-7tht46i7ntc5euc5gec2g3-271557689284.asia-east1.run.app/
+# Run and deploy your AI Studio app
+
+This contains everything you need to run your app locally.
+
+View your app in AI Studio: https://ai.studio/apps/3998f531-e1bf-4c00-8659-23316ef2e92e
 
 ## Run Locally
 
