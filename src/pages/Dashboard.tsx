@@ -162,8 +162,8 @@ export default function Dashboard() {
             <Building className="w-5 h-5 text-white" />
           </div>
           <div className={`ml-3 whitespace-nowrap transition-opacity duration-300 ${!isSidebarOpen ? 'opacity-0 md:hidden' : 'opacity-100'}`}>
-            <h1 className="text-lg font-bold leading-tight tracking-wide">Elnusa</h1>
-            <p className="text-[10px] text-blue-200 tracking-wider uppercase font-medium">Warehouse</p>
+            <h1 className="text-lg font-bold leading-tight tracking-wide">Warehouse</h1>
+            <p className="text-[10px] text-blue-200 tracking-wider uppercase font-medium">Checklist</p>
           </div>
         </div>
 
@@ -309,7 +309,7 @@ export default function Dashboard() {
             </button>
             <div className="sm:hidden flex items-center text-gray-800 dark:text-gray-100 font-bold uppercase tracking-wider text-sm truncate mr-2">
               <Building className="w-4 h-4 shrink-0 text-[#FF7A00] mr-2" />
-              Elnusa
+              Warehouse
             </div>
             <div className="hidden sm:flex items-center px-3 py-2 bg-gray-50 dark:bg-dark-bg border border-gray-200 dark:border-dark-border rounded-lg max-w-md w-full focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all group mr-4">
               <Search className="w-4 h-4 text-gray-400 group-focus-within:text-blue-500 transition-colors mr-2" />

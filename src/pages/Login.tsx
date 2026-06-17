@@ -62,7 +62,7 @@ export default function Login() {
       {/* Gambar Background Full */}
       <img
         src="/warehouse-elnusa.jpg"
-        alt="Elnusa Warehouse BSD"
+        alt="Warehouse Background"
         className="absolute inset-0 w-full h-full object-cover"
       />
       
@@ -81,7 +81,7 @@ export default function Login() {
             </div>
           </div>
           <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
-            Elnusa Warehouse
+            Warehouse Checklist
           </h2>
           <p className="mt-3 text-sm text-gray-700 dark:text-gray-300 font-medium px-4">
             Sistem manajemen dan standarisasi checklist gudang terpadu.
